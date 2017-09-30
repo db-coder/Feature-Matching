@@ -1,0 +1,364 @@
+<html>
+<head>
+<title>Computer Vision Project 2 Report</title>
+<link href='http://fonts.googleapis.com/css?family=Nunito:300|Crimson+Text|Droid+Sans+Mono' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" title="Default" href="styles/github.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>  
+
+<link rel="stylesheet" href="highlighting/styles/default.css">
+<script src="highlighting/highlight.pack.js"></script>
+
+<style type="text/css">
+body {
+	margin: 0px;
+	width: 100%;
+	font-family: 'Crimson Text', serif;
+	font-size: 20px;
+	background: #fcfcfc;
+}
+h1 {
+	font-family: 'Nunito', sans-serif;
+	font-weight: normal;
+	font-size: 28px;
+	margin: 25px 0px 0px 0px;
+}
+
+h2 {
+	font-family: 'Nunito', sans-serif;
+	font-weight: normal;
+	font-size: 32px;
+	margin: 15px 0px 35px 0px;
+	color: #333;	
+	word-spacing: 3px;
+}
+
+h3 {
+	font-family: 'Nunito', sans-serif;
+	font-weight: normal;
+	font-size: 26px;
+	margin: 10px 0px 10px 0px;
+	color: #333;
+	word-spacing: 2px;
+}
+h4 {
+	font-family: 'Nunito', sans-serif;
+	font-weight: normal;
+	font-size: 22px;
+	margin: 10px 0px 10px 0px;
+	color: #333;
+	word-spacing: 2px;
+}
+
+h5 {
+	font-family: 'Nunito', sans-serif;
+	font-weight: normal;
+	font-size: 18px;
+	margin: 10px 0px 10px 0px;
+	color: #111;
+	word-spacing: 2px;
+}
+
+p, li {
+	color: #444;
+}
+
+a {
+	color: #DE3737;
+}
+
+.container {
+	margin: 0px auto 0px auto;
+	width: 960px;
+}
+
+#header {
+	background: #333;
+	width: 100%;
+}
+
+#headersub {
+	color: #ccc;
+	width: 960px;
+	margin: 0px auto 0px auto;
+	padding: 20px 0px 20px 0px;
+}
+
+.chart {
+	width: 480px;
+}
+.lol {
+	font-size: 16px;
+	color: #888;
+	font-style: italic;
+}
+.sep {
+	height: 1px;
+	width: 100%;
+	background: #999;
+	margin: 20px 0px 20px 0px;
+}
+.footer{
+	font-size: 16px;
+}
+.latex {
+	width: 100%;
+}
+
+.latex img {
+	display: block;
+	margin: 0px auto 0px auto;
+}
+
+pre {
+	font-family: 'Droid Sans Mono';
+	font-size: 14px;
+}
+
+td img {
+  vertical-align: middle;
+}
+
+#contents a {
+}
+</style>
+<script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+</script>
+</head>
+<body>
+<div id="header" >
+	<div id="headersub">
+		<h1><span style="color: #DE3737">Dibyendu Mondal</span></h1>
+	</div>
+</div>
+<div class="container">
+
+	<h2>Project 2: Local Feature Matching</h2>
+
+	<div align="center">
+		<img src="Images/norte_normal_arrows.jpg" height="400px" />
+		<p style="font-size: 24px">Feature Matching</p>
+	</div>
+
+	<div style="clear:both">
+		<p>This involves three major steps:
+			<ol>
+				<li>Finding Interest Points</li>
+				<li>Finding Local Features</li>
+				<li>Finding Feature Matches</li>
+			</ol>
+		</p>
+		<h3>Finding Interest Points</h3>
+		<p>I used the Harris Corner Detection algorithm for finding interest points. It involves the following steps:
+		<ol>
+			<li>Getting the Image derivatives
+				<pre><code>
+					filter = fspecial('Gaussian',3,0.5);
+					[Gx,Gy] = imgradientxy(filter,'sobel');
+					Ix = imfilter(image,Gx,'symmetric','same','conv');
+					Iy = imfilter(image,Gy,'symmetric','same','conv');
+				</code></pre>
+			</li>
+			<li>Squaring the derivatives
+				<pre><code>
+					Ix2 = Ix.*Ix;
+					Iy2 = Iy.*Iy;
+					Ixy = Ix.*Iy;
+				</code></pre>
+			</li>
+			<li>Applying the gausian filter
+				<pre><code>
+					filter = fspecial('Gaussian',3,1);
+					GIx2 = imfilter(Ix2,filter,'symmetric','same','conv');
+					GIy2 = imfilter(Iy2,filter,'symmetric','same','conv');
+					GIxy = imfilter(Ixy,filter,'symmetric','same','conv');
+				</code></pre>
+			</li>
+			<li>Getting the cornerness scores
+				<pre><code>
+					alpha = 0.05;
+					Har = (GIx2.*GIy2 - GIxy.*GIxy) - alpha*((GIx2 + GIy2).*(GIx2 + GIy2));
+				</code></pre>
+			</li>
+			<li>Non-maximum supression
+				<pre><code>
+					threshold = 1.54e-3;
+					Har_th = Har>threshold;
+					Har_th1 = Har.*Har_th;
+
+					Har_supp = imregionalmax(Har_th1);
+					Har_supp1 = Har.*Har_supp;
+
+					Har_th_supp = (Har_th1==Har_supp1).*Har_supp1;
+					[y,x,confidence] = find(Har_th_supp>0);
+				</code></pre>
+			</li>
+		</ol>
+		<div align="center">
+			<img src="Images/norte_normal_corners1.jpg" height="50%"/>
+			<img src="Images/norte_normal_corners2.jpg" height="50%"/>
+			<p style="font-size: 24px">Norte Dame Interest Points</p>
+		</div>
+		</p>
+		<h3>Finding Local Features</h3>
+		<p>I used the SIFT feature detection algorithm for finding local features around the interest points. It involves the following steps:
+			<ol>
+				<li>Getting the Image derivatives
+					<pre><code>
+						filter = fspecial('gaussian',3,0.5);
+						image_filtered = imfilter (image, filter,'symmetric','same','conv');
+						[~ , imgrad_orient] = imgradient(image_filtered, 'sobel');
+					</code></pre>
+				</li>
+				<li>Finding orientations of patches and assigning them to one of the 8 bins
+					<pre><code>
+						impatch_or(:,:,i) = imgrad_orient((y(i)-7):(y(i)+8),(x(i)-7):(x(i)+8));    
+					    	hist_temp = blockproc(impatch_or(:,:,i),[feature_width/4 feature_width/4], fun);
+					    	features(i,:) = reshape(hist_temp',[1 ((feature_width/4)^2)*8]);
+					</code></pre>
+				</li>
+				<li>Normalizing the features
+					<pre><code>
+						features(i,:) = features(i,:)/norm(features(i,:),2);
+					</code></pre>
+				</li>
+			</ol>
+			<div align="center">
+				<img src="Images/norte_normal_features.jpg" height="50%"/>
+				<p style="font-size: 20px">Norte Dame Features</p>
+			</div>
+		</p>
+		<h3>Finding Feature Matches</h3>
+		<p>I used the Nearest Neighbour Distance ratios to find the matches. It involves the following steps:
+			<ol>
+				<li>Finding Nearest Neighbour distance ratios
+					<pre><code>
+						d = pdist2(features1,features2);
+						[dist,index] = sort(d,2,'ascend');
+						nn(:) = dist(:,1)./dist(:,2);
+					</code></pre>
+				</li>
+				<li>Finding the matches and confidences by putting a threshold on the ratios
+					<pre><code>
+						threshold = 0.9991;
+						nn1 = nn < threshold;
+						nn1index = find(nn1);
+						matches = [nnindex(nn1index,1),nnindex(nn1index,2)];
+						confidences = nn(nn1index);
+					</code></pre>
+				</li>
+			</ol>
+			<h4>Results:</h4>
+			Image = Norte Dame<br>
+			alpha = 0.05<br>
+			threshold = 1.54e-3<br>
+			Accuracy = 100%
+		</p>
+	</div>
+</div>
+<div align="center">
+	<img src="Images/norte_normal_correct.jpg" height="50%"/>
+	<img src="Images/norte_normal_arrows.jpg" height="50%"/>
+	<p style="font-size: 20px">Norte Dame Matches</p>
+</div>
+<div class="container">
+	<p>Image = Mount Rushmore<br>
+	alpha = 0.05<br>
+	threshold = 1.54e-3<br>
+	Accuracy = 97%</p>
+</div>
+<div align="center">
+	<img src="Images/rush_normal_correct.jpg" height="40%"/>
+	<img src="Images/rush_normal_arrows.jpg" height="40%"/>
+	<p style="font-size: 20px">Mount Rushmore Matches</p>
+</div>
+<div class="container">
+	<p>Image = Episcopal Gaudi<br>
+	alpha = 0.04<br>
+	threshold = 1.54e-3<br>
+	Accuracy = 5%</p>
+</div>
+<div align="center">
+	<img src="Images/gaudi_normal_correct.jpg" height="40%"/>
+	<img src="Images/gaudi_normal_arrows.jpg" height="40%"/>
+	<p style="font-size: 20px">Episcopal Gaudi Matches</p>
+</div>
+<div class="container">
+	<h3>Extra Credit</h3>
+	<h4>Interest points using multiple scales</h4>
+	<p>I used scales 1, 0.5, 0.25 and 0.125. It involves the following steps:</p>
+	<ol>
+		<li>Creating an array of scales
+			<pre><code>
+				scale_val=0.5.^[0;3];
+			</code></pre>
+		</li>
+		<li>Resizing the image based on the current scale value
+			<pre><code>
+				image1 = imresize(image,scale_val(i));
+			</code></pre>
+		</li>
+		<li>Calling the <i>get_interest_ponts()</i> function
+			<pre><code>
+				[x1,y1] = get_interest_points(image1,feature_width,scale_val(i));
+			</code></pre>
+		</li>
+		<li>Returning the correct x, y and scale values
+			<pre><code>
+				scale1=scale_val(i)*ones(size(y1,1),1);
+			    	if(i==1)
+					x=x1;
+					y=y1;
+					scale=scale1;
+			   	else
+					x=[x;x1];
+					y=[y;y1];
+					scale=[scale;scale1];
+			    	end
+			</code></pre>
+		</li>
+	</ol>
+	<h4>Features using multiple scales</h4>
+	<p>I used scales 1, 0.5, 0.25 and 0.125. It involves the following steps:</p>
+	<ol>
+		<li>Creating an array of scales
+			<pre><code>
+				scale_val=0.5.^[0;3];
+			</code></pre>
+		</li>
+		<li>Resizing the image based on the current scale value
+			<pre><code>
+				image1 = imresize(image,scale_val(i));
+			</code></pre>
+		</li>
+		<li>Calling the <i>get_features()</i> function with correct parameters
+			<pre><code>
+				[index1,~]=find(scale==scale_val(i));
+				x1=x(index1);
+				y1=y(index1);
+				features1=get_features(image1,x1,y1,feature_width);
+			</code></pre>
+		</li>
+		<li>Returning the correct features
+			<pre><code>
+				if(i==1)
+					features=features1;
+				else
+					features=[features;features1];
+				end
+			</code></pre>
+		</li>
+	</ol>
+	<h4>Results:</h4>
+	<p>Image = Mount Rushmore<br>
+	alpha = 0.05<br>
+	threshold = 1.54e-3<br>
+	Accuracy = 97%</p>
+</div>
+<div align="center">
+	<img src="Images/rush_scale_correct.jpg" height="40%"/>
+	<img src="Images/rush_scale_arrows.jpg" height="40%"/>
+	<p style="font-size: 20px">Mount Rushmore Matches</p>
+</div>
+</body>
+</html>
